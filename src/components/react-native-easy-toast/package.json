@@ -1,0 +1,65 @@
+{
+  "_from": "git+https://github.com/alex4dev/react-native-easy-toast.git",
+  "_id": "react-native-easy-toast@1.2.0",
+  "_inBundle": false,
+  "_integrity": "",
+  "_location": "/react-native-easy-toast",
+  "_phantomChildren": {},
+  "_requested": {
+    "type": "git",
+    "raw": "react-native-easy-toast@git+https://github.com/alex4dev/react-native-easy-toast.git",
+    "name": "react-native-easy-toast",
+    "escapedName": "react-native-easy-toast",
+    "rawSpec": "git+https://github.com/alex4dev/react-native-easy-toast.git",
+    "saveSpec": "git+https://github.com/alex4dev/react-native-easy-toast.git",
+    "fetchSpec": "https://github.com/alex4dev/react-native-easy-toast.git",
+    "gitCommittish": null
+  },
+  "_requiredBy": [
+    "/"
+  ],
+  "_resolved": "git+https://github.com/alex4dev/react-native-easy-toast.git#0be54f440b2c9a7f9dd62bf3993a5d0544e76391",
+  "_spec": "react-native-easy-toast@git+https://github.com/alex4dev/react-native-easy-toast.git",
+  "_where": "C:\\Users\\ABDULLAH\\Desktop\\Android Studio\\AwesomeProject",
+  "author": {
+    "name": "crazycodeboy"
+  },
+  "bugs": {
+    "url": "https://github.com/crazycodeboy/react-native-easy-toast/issues"
+  },
+  "bundleDependencies": false,
+  "dependencies": {
+    "prop-types": "^15.5.10"
+  },
+  "deprecated": false,
+  "description": "A react native module to show toast like android, it works on iOS and Android.",
+  "homepage": "https://github.com/crazycodeboy/react-native-easy-toast#readme",
+  "keywords": [
+    "react-native",
+    "react-native-component",
+    "react-native-toast",
+    "toast",
+    "toast-ios",
+    "alert",
+    "react-component",
+    "navigator",
+    "ios",
+    "android"
+  ],
+  "license": "MIT",
+  "main": "index.js",
+  "name": "react-native-easy-toast",
+  "peerDependencies": {
+    "react-native": ">=0.20.0",
+    "prop-types": "^15.5.7"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/crazycodeboy/react-native-easy-toast.git"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "types": "index.d.ts",
+  "version": "1.2.0"
+}
