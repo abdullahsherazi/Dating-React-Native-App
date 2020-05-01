@@ -33,7 +33,7 @@ class SplashScreen extends React.Component {
   }
   render() {
     return (
-      <SafeAreaView style={{flex: 1, backgroundColor: 'pink'}}>
+      <SafeAreaView style={{flex: 1, backgroundColor: '#08a4ff'}}>
         <GlobalHeader />
         <View
           style={{
@@ -42,7 +42,6 @@ class SplashScreen extends React.Component {
             alignItems: 'center',
           }}>
           <Animated.Image
-            useNa
             style={{
               width: 100,
               height: 100,

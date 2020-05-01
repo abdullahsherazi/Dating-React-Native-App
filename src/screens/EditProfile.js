@@ -193,6 +193,7 @@ class EditProfile extends React.Component {
                   borderWidth: 0.5,
                   borderColor: '#dcdcdc',
                   overflow: 'hidden',
+                  backgroundColor: '#d9d9d9',
                 }}>
                 <Image
                   source={{uri: this.props.reduxState.userdata.avatar}}

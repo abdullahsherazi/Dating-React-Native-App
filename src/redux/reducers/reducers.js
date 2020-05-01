@@ -3,6 +3,7 @@ import * as actionTypes from '../actions/types';
 const initialState = {
   loading: false,
   userdata: {},
+  partners: [],
 };
 
 export default function(state = initialState, action) {
@@ -23,6 +24,13 @@ export default function(state = initialState, action) {
         ...state,
         userdata: action.payload,
       };
+    case actionTypes.SET_PARTNERS:
+      console.log('PARTNERS', action.payload);
+      return {
+        ...state,
+        partners: action.payload,
+      };
+
     default:
       return state;
   }

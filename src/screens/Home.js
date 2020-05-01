@@ -1,33 +1,18 @@
 import React, {Component} from 'react';
 import {
-  Platform,
   StyleSheet,
   View,
   Text,
-  Dimensions,
-  ImageBackground,
   Image,
-  TextInput,
   TouchableOpacity,
-  ScrollView,
-  Switch,
-  ActivityIndicator,
   SafeAreaView,
 } from 'react-native';
-import FontAwesome5 from 'react-native-vector-icons/dist/FontAwesome5';
-import Entypo from 'react-native-vector-icons/dist/Entypo';
-import Ionicons from 'react-native-vector-icons/dist/Ionicons';
-import Fontisto from 'react-native-vector-icons/dist/Fontisto';
 import MaterialCommunityIcons from 'react-native-vector-icons/dist/MaterialCommunityIcons';
-import {Header, Left, Body, Right, Button, Icon, Title} from 'native-base';
 import SwitchToggle from '@dooboo-ui/native-switch-toggle';
 import {bindActionCreators} from 'redux';
 import * as reduxActions from '../redux/actions/actions';
 import {connect} from 'react-redux';
 import GloabalHeader from '../components/GlobalHeader';
-import GlobalInput from '../components/GlobalInput';
-import GlobalButton from '../components/GlobalButton';
-import ImagePicker from 'react-native-image-crop-picker';
 import Loader from '../components/Loader';
 import Toast from '../components/react-native-easy-toast';
 
@@ -175,14 +160,21 @@ class Home extends Component {
 
           <TouchableOpacity
             onPress={() =>
-              this.props.navigation.navigate('FreelancerOnGoingBooking')
+              this.props.reduxActions.searchPartners(
+                this.props.navigation,
+                this.props.reduxState.userdata,
+                this.refs.toast,
+              )
             }
             style={styles.options}>
             <Text style={[styles.ServiceText, styles.green]}>
-              Ongoing Bookings
+              Search Partners
             </Text>
 
-            <MaterialCommunityIcons name={'history'} style={styles.Icon} />
+            <MaterialCommunityIcons
+              name={'account-search-outline'}
+              style={styles.Icon}
+            />
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() =>

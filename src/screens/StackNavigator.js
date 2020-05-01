@@ -7,9 +7,23 @@ import SplashScreen from './SplashScreen';
 import NoInternetErrorScreen from './NoInternetErrorScreen';
 import Profile from './Profile';
 import EditProfile from './EditProfile';
+import PartnersListCarousel from './PartnersListCarousel';
+import PartnerDetail from './PartnerDetail';
 
 const AppNavigator = createStackNavigator(
   {
+    PartnerDetail: {
+      screen: PartnerDetail,
+      navigationOptions: () => ({
+        header: null,
+      }),
+    },
+    PartnersListCarousel: {
+      screen: PartnersListCarousel,
+      navigationOptions: () => ({
+        header: null,
+      }),
+    },
     EditProfile: {
       screen: EditProfile,
       navigationOptions: () => ({

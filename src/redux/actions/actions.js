@@ -262,32 +262,116 @@ export const activateLocation = (
   });
   Geolocation.getCurrentPosition(
     position => {
-      this.setState({
-        coordinates: {
-          lat: position.coords.latitude,
-          lng: position.coords.longitude,
-        },
-        loading: false,
-      });
-
-      if (sendMessage === true) {
-        this.setState({
-          sendMessage: true,
+      let data = {
+        emailAddress: userdata.emailAddress,
+        lat: position.coords.latitude,
+        lng: position.coords.longitude,
+      };
+      axios
+        .post(server + 'users/updateLocation', data, {
+          headers: {
+            'x-access-token': userdata.token,
+          },
+        })
+        .then(response => {
+          if (response.status === 200) {
+            let data = {...userdata, location: response.data.location};
+            AsyncStorage.setItem('userdata', JSON.stringify(data)).then(() => {
+              dispatch({
+                type: actionTypes.SET_USER_DATA,
+                payload: data,
+              });
+              dispatch({type: actionTypes.NOT_LOADING});
+            });
+          } else {
+            switchtoggleFunc();
+            dispatch({type: actionTypes.NOT_LOADING});
+            toast.show(
+              'Some Problem Occured While Updating Your Location, Try Again',
+              2000,
+            );
+          }
+        })
+        .catch(() => {
+          switchtoggleFunc();
+          dispatch({type: actionTypes.NOT_LOADING});
+          toast.show(
+            'Some Problem Occured While Updating Your Location, Try Again',
+            2000,
+          );
         });
-      } else {
-        this.setState({
-          mapOverlay: true,
-        });
-      }
     },
     () => {
-      this.setState({loading: false});
-      this.refs.toast.show('Slow Internet. Try Again', 2000);
+      switchtoggleFunc();
+      dispatch({type: actionTypes.NOT_LOADING});
+      toast.show('Slow Internet or Location Not Enabled. Try Again', 2000);
     },
     {enableHighAccuracy: false, timeout: 5000},
   );
 };
 
+export const searchPartners = (
+  navigation,
+  userdata,
+  toast,
+) => async dispatch => {
+  dispatch({type: actionTypes.START_LOADING});
+  if (Object.keys(userdata.location).length === 0) {
+    dispatch({type: actionTypes.NOT_LOADING});
+    toast.show('First Activate Your Location', 2000);
+  } else {
+    let data = {
+      lat: userdata.location.coordinates[0],
+      lng: userdata.location.coordinates[1],
+      maxDistance: 15000,
+    };
+    axios
+      .post(server + 'users/findPeople', data, {
+        headers: {
+          'x-access-token': userdata.token,
+        },
+      })
+      .then(response => {
+        if (response.status === 200) {
+          if (response.data.partners.length > 0) {
+            let partners = [];
+            for (let i = 0; i < response.data.partners.length; i++) {
+              if (userdata.gender !== response.data.partners[i].gender) {
+                partners.push(response.data.partners[i]);
+              }
+            }
+            if (partners.length > 0) {
+              dispatch({
+                type: actionTypes.SET_PARTNERS,
+                payload: partners,
+              });
+              dispatch({type: actionTypes.NOT_LOADING});
+              navigation.navigate('PartnersListCarousel');
+            } else {
+              dispatch({type: actionTypes.NOT_LOADING});
+              toast.show('No Partner Found in 15 km Radius', 2500);
+            }
+          } else {
+            dispatch({type: actionTypes.NOT_LOADING});
+            toast.show('No Partner Found in 15 km Radius', 2500);
+          }
+        } else {
+          dispatch({type: actionTypes.NOT_LOADING});
+          toast.show(
+            'Some Problem Occured While Finding Your Partners, Try Again',
+            2000,
+          );
+        }
+      })
+      .catch(error => {
+        dispatch({type: actionTypes.NOT_LOADING});
+        toast.show(
+          'Some Problem Occured While Finding Your Partners, Try Again',
+          2000,
+        );
+      });
+  }
+};
 export const resetPassword = (
   navigation,
   userdata,
