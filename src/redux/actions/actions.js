@@ -5,7 +5,6 @@ import server from '../../constants/server';
 import AsyncStorage from '@react-native-community/async-storage';
 import NetInfo from '@react-native-community/netinfo';
 import Geolocation from '@react-native-community/geolocation';
-// import * as paginationConstants from "../../constants/paginationConstants";
 
 export const signup = (navigation, userdata, toast) => async dispatch => {
   dispatch({type: actionTypes.START_LOADING});
