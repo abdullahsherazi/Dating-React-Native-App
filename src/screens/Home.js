@@ -178,7 +178,11 @@ class Home extends Component {
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() =>
-              this.props.reduxActions.signout(this.props.navigation)
+              this.props.reduxActions.signout(
+                this.props.navigation,
+                this.props.reduxState.userdata,
+                this.refs.toast,
+              )
             }
             style={[{position: 'absolute', bottom: 20}, styles.options]}>
             <Text style={[styles.ServiceText, styles.green]}>Sign Out</Text>

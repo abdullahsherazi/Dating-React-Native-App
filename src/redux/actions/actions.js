@@ -5,128 +5,197 @@ import server from '../../constants/server';
 import AsyncStorage from '@react-native-community/async-storage';
 import NetInfo from '@react-native-community/netinfo';
 import Geolocation from '@react-native-community/geolocation';
+import PushNotification from 'react-native-push-notification';
+import uuid from 'uuid';
+import storage from '@react-native-firebase/storage';
 
 export const signup = (navigation, userdata, toast) => async dispatch => {
   dispatch({type: actionTypes.START_LOADING});
-  userdata = {
-    ...userdata,
-    avatar:
-      'https://encrypted-tbn0.gstatic.com/images?q=tbn%3AANd9GcQG-GWp9R0p9UrshUAZRiOiH-62eKWwyBOlInissnsMS3PeiPp0',
-  };
-  axios
-    .post(server + 'users/signup', userdata)
-    .then(response => {
-      if (response.status === 200) {
-        let data = {
-          ...response.data,
+  try {
+    PushNotification.configure({
+      // (optional) Called when Token is generated (iOS and Android)
+      onRegister: token => {
+        let newUserdata = {
+          ...userdata,
+          avatar:
+            'https://encrypted-tbn0.gstatic.com/images?q=tbn%3AANd9GcQG-GWp9R0p9UrshUAZRiOiH-62eKWwyBOlInissnsMS3PeiPp0',
+          fcmToken: token.token,
         };
-        delete data.msg;
-        AsyncStorage.setItem('userdata', JSON.stringify(data)).then(() => {
-          dispatch({
-            type: actionTypes.SET_USER_DATA,
-            payload: data,
+        axios
+          .post(server + 'users/signup', newUserdata)
+          .then(response => {
+            if (response.status === 200) {
+              let data = {
+                ...response.data,
+              };
+              delete data.msg;
+              AsyncStorage.setItem('userdata', JSON.stringify(data)).then(
+                () => {
+                  dispatch({
+                    type: actionTypes.SET_USER_DATA,
+                    payload: data,
+                  });
+                  navigation.dispatch(
+                    StackActions.reset({
+                      index: 0,
+                      actions: [
+                        NavigationActions.navigate({
+                          routeName: 'Home',
+                        }),
+                      ],
+                    }),
+                  );
+                  dispatch({type: actionTypes.NOT_LOADING});
+                },
+              );
+            } else {
+              dispatch({type: actionTypes.NOT_LOADING});
+              toast.show(
+                'Some Problem Occured While Signing You Up, Try Again',
+                2000,
+              );
+            }
+          })
+          .catch(error => {
+            dispatch({type: actionTypes.NOT_LOADING});
+            if (error.response.status === 409) {
+              toast.show('This Email Address Already Exists', 2500);
+            } else {
+              toast.show(
+                'Some Problem Occured While Signing You Up, Try Again',
+                2000,
+              );
+            }
           });
-          navigation.dispatch(
-            StackActions.reset({
-              index: 0,
-              actions: [
-                NavigationActions.navigate({
-                  routeName: 'Home',
-                }),
-              ],
-            }),
-          );
-          dispatch({type: actionTypes.NOT_LOADING});
-        });
-      } else {
-        dispatch({type: actionTypes.NOT_LOADING});
-        toast.show(
-          'Some Problem Occured While Signing You Up, Try Again',
-          2000,
-        );
-      }
-    })
-    .catch(error => {
-      dispatch({type: actionTypes.NOT_LOADING});
-      if (error.response.status === 409) {
-        toast.show('This Email Address Already Exists', 2500);
-      } else {
-        toast.show(
-          'Some Problem Occured While Signing You Up, Try Again',
-          2000,
-        );
-      }
+      },
+      // (required) Called when a remote or local notification is opened or received
+      onNotification: () => {},
+      // Android only: GCM or FCM Sender ID
+      // senderID: '256218572662',
+      popInitialNotification: true,
+      requestPermissions: true,
     });
+  } catch (error) {
+    dispatch({type: actionTypes.NOT_LOADING});
+    toast.show('Some Problem Occured While Signing You Up, Try Again', 2000);
+  }
 };
 
 export const signin = (navigation, userdata, toast) => async dispatch => {
   dispatch({type: actionTypes.START_LOADING});
-  axios
-    .post(server + 'users/signin', userdata)
-    .then(response => {
-      if (response.status === 200) {
-        let data = {
-          ...response.data,
+  try {
+    PushNotification.configure({
+      // (optional) Called when Token is generated (iOS and Android)
+      onRegister: token => {
+        let newUserdata = {
+          ...userdata,
+          fcmToken: token.token,
         };
-        delete data.msg;
-        AsyncStorage.setItem('userdata', JSON.stringify(data)).then(() => {
-          dispatch({
-            type: actionTypes.SET_USER_DATA,
-            payload: data,
+        axios
+          .post(server + 'users/signin', newUserdata)
+          .then(response => {
+            if (response.status === 200) {
+              let data = {
+                ...response.data,
+              };
+              delete data.msg;
+              AsyncStorage.setItem('userdata', JSON.stringify(data)).then(
+                () => {
+                  dispatch({
+                    type: actionTypes.SET_USER_DATA,
+                    payload: data,
+                  });
+                  navigation.dispatch(
+                    StackActions.reset({
+                      index: 0,
+                      actions: [
+                        NavigationActions.navigate({
+                          routeName: 'Home',
+                        }),
+                      ],
+                    }),
+                  );
+                  dispatch({type: actionTypes.NOT_LOADING});
+                },
+              );
+            } else {
+              dispatch({type: actionTypes.NOT_LOADING});
+              toast.show(
+                'Some Problem Occured While Signing You In, Try Again',
+                2000,
+              );
+            }
+          })
+          .catch(error => {
+            dispatch({type: actionTypes.NOT_LOADING});
+            if (error.response.status === 401) {
+              toast.show('Wrong Credentials', 2500);
+            } else if (error.response.status === 500) {
+              toast.show("This Email Address Doesn't Exist", 2500);
+            } else {
+              toast.show(
+                'Some Problem Occured While Signing You In, Try Again',
+                2000,
+              );
+            }
           });
-          navigation.dispatch(
-            StackActions.reset({
-              index: 0,
-              actions: [
-                NavigationActions.navigate({
-                  routeName: 'Home',
-                }),
-              ],
-            }),
-          );
-          dispatch({type: actionTypes.NOT_LOADING});
-        });
-      } else {
-        dispatch({type: actionTypes.NOT_LOADING});
-        toast.show(
-          'Some Problem Occured While Signing You In, Try Again',
-          2000,
-        );
-      }
-    })
-    .catch(error => {
-      dispatch({type: actionTypes.NOT_LOADING});
-      if (error.response.status === 401) {
-        toast.show('Wrong Credentials', 2500);
-      } else if (error.response.status === 500) {
-        toast.show("This Email Address Doesn't Exist", 2500);
-      } else {
-        toast.show(
-          'Some Problem Occured While Signing You In, Try Again',
-          2000,
-        );
-      }
+      },
+      // (required) Called when a remote or local notification is opened or received
+      onNotification: () => {},
+      // Android only: GCM or FCM Sender ID
+      // senderID: '256218572662',
+      popInitialNotification: true,
+      requestPermissions: true,
     });
+  } catch (error) {
+    dispatch({type: actionTypes.NOT_LOADING});
+    toast.show('Some Problem Occured While Signing You In, Try Again', 2000);
+  }
 };
 
 export const checkUser = navigation => async dispatch => {
   AsyncStorage.getItem('userdata').then(data => {
+    let getout = false;
     let userdata = JSON.parse(data);
     if (userdata) {
       dispatch({
         type: actionTypes.SET_USER_DATA,
         payload: userdata,
       });
-      navigation.dispatch(
-        StackActions.reset({
-          index: 0,
-          actions: [
-            NavigationActions.navigate({
-              routeName: 'Home',
-            }),
-          ],
-        }),
-      );
+
+      PushNotification.configure({
+        // (required) Called when a remote or local notification is opened or received
+        onNotification: notification => {
+          console.log(notification);
+
+          if (notification.foreground)
+            navigation.navigate('Reciever', {
+              data: {callerSocketId: notification.data.callerSocketId},
+            });
+          else {
+            navigation.navigate('Reciever', {
+              data: {callerSocketId: notification.callerSocketId},
+            });
+          }
+          getout = true;
+        },
+        // Android only: GCM or FCM Sender ID
+        // senderID: '256218572662',
+        popInitialNotification: true,
+        requestPermissions: true,
+      });
+      if (!getout) {
+        navigation.dispatch(
+          StackActions.reset({
+            index: 0,
+            actions: [
+              NavigationActions.navigate({
+                routeName: 'Home',
+              }),
+            ],
+          }),
+        );
+      }
     } else
       navigation.dispatch(
         StackActions.reset({
@@ -141,22 +210,44 @@ export const checkUser = navigation => async dispatch => {
   });
 };
 
-export const signout = navigation => async dispatch => {
-  AsyncStorage.removeItem('userdata').then(() => {
-    // dispatch({
-    //   type: actionTypes.CLEAR_ALL_DATA,
-    // });
-    navigation.dispatch(
-      StackActions.reset({
-        index: 0,
-        actions: [
-          NavigationActions.navigate({
-            routeName: 'SignIn',
-          }),
-        ],
-      }),
-    );
-  });
+export const signout = (navigation, userdata, toast) => async dispatch => {
+  dispatch({type: actionTypes.START_LOADING});
+  axios
+    .post(server + 'users/signout', userdata, {
+      headers: {
+        'x-access-token': userdata.token,
+      },
+    })
+    .then(response => {
+      if (response.status === 200) {
+        AsyncStorage.removeItem('userdata').then(() => {
+          // dispatch({
+          //   type: actionTypes.CLEAR_ALL_DATA,
+          // });
+          navigation.dispatch(
+            StackActions.reset({
+              index: 0,
+              actions: [
+                NavigationActions.navigate({
+                  routeName: 'SignIn',
+                }),
+              ],
+            }),
+          );
+          dispatch({type: actionTypes.NOT_LOADING});
+        });
+      } else {
+        dispatch({type: actionTypes.NOT_LOADING});
+        toast.show(
+          'Some Problem Occured While Signing You Out, Try Again',
+          2000,
+        );
+      }
+    })
+    .catch(() => {
+      dispatch({type: actionTypes.NOT_LOADING});
+      toast.show('Some Problem Occured While Signing You Out, Try Again', 2000);
+    });
 };
 export const uploadProfilePic = (
   userdata,
@@ -164,49 +255,69 @@ export const uploadProfilePic = (
   toast,
 ) => async dispatch => {
   dispatch({type: actionTypes.START_LOADING});
-  var formData = new FormData();
-  formData.append('file', {
-    uri: imageResponse.path,
-    type: imageResponse.mime,
-    name: imageResponse.path.split('/').pop(),
-  });
-  formData.append('emailAddress', userdata.emailAddress);
-  // console.warn(imageResponse);
-  // console.warn(formData);
-  axios
-    .post(server + 'users/uploadProfilePic', formData, {
-      headers: {
-        'Content-type': 'multipart/form-data',
-        'x-access-token': userdata.token,
-      },
-    })
-    .then(response => {
-      if (response.status === 200) {
-        let data = {
-          ...userdata,
-          avatar: response.data.avatar,
-        };
-        AsyncStorage.setItem('userdata', JSON.stringify(data)).then(() => {
-          dispatch({
-            type: actionTypes.SET_USER_DATA,
-            payload: data,
+  // var formData = new FormData();
+  // formData.append('file', {
+  //   uri: imageResponse.path,
+  //   type: imageResponse.mime,
+  //   name: imageResponse.path.split('/').pop(),
+  // });
+  // formData.append('emailAddress', userdata.emailAddress);
+
+  let imgRef = storage().ref('/usersProfilePic/' + uuid.v4());
+  imgRef
+    .putFile(imageResponse.path)
+    .then(async snapshot => {
+      if (snapshot.state === 'success') {
+        let data = {...userdata, avatar: await imgRef.getDownloadURL()};
+        axios
+          .post(server + 'users/uploadProfilePic', data, {
+            headers: {
+              'x-access-token': userdata.token,
+            },
+          })
+          .then(response => {
+            if (response.status === 200) {
+              let data = {
+                ...userdata,
+                avatar: response.data.avatar,
+              };
+              AsyncStorage.setItem('userdata', JSON.stringify(data)).then(
+                () => {
+                  dispatch({
+                    type: actionTypes.SET_USER_DATA,
+                    payload: data,
+                  });
+                  dispatch({type: actionTypes.NOT_LOADING});
+                },
+              );
+            } else {
+              dispatch({type: actionTypes.NOT_LOADING});
+              toast.show(
+                'Some Problem Occured While Uploading Your Profile Pic, Try Again',
+                2000,
+              );
+            }
+          })
+          .catch(() => {
+            dispatch({type: actionTypes.NOT_LOADING});
+            toast.show(
+              'Some Problem Occured While Uploading Your Profile Pic, Try Again',
+              2000,
+            );
           });
-          dispatch({type: actionTypes.NOT_LOADING});
-        });
       } else {
         dispatch({type: actionTypes.NOT_LOADING});
         toast.show(
           'Some Problem Occured While Uploading Your Profile Pic, Try Again',
-          2000,
+          2500,
         );
       }
     })
-    .catch(error => {
+    .catch(() => {
       dispatch({type: actionTypes.NOT_LOADING});
-      console.log(error);
       toast.show(
         'Some Problem Occured While Uploading Your Profile Pic, Try Again',
-        2000,
+        2500,
       );
     });
 };
@@ -362,7 +473,7 @@ export const searchPartners = (
           );
         }
       })
-      .catch(error => {
+      .catch(() => {
         dispatch({type: actionTypes.NOT_LOADING});
         toast.show(
           'Some Problem Occured While Finding Your Partners, Try Again',
@@ -371,24 +482,86 @@ export const searchPartners = (
       });
   }
 };
+export const forgetPasswordEmail = (
+  navigation,
+  userdata,
+  toast,
+) => async dispatch => {
+  dispatch({type: actionTypes.START_LOADING});
+  axios
+    .post(server + 'users/forgetPasswordEmail', userdata)
+    .then(response => {
+      if (response.status === 200) {
+        dispatch({type: actionTypes.NOT_LOADING});
+        navigation.goBack();
+        alert('Temporary Password Has Been Sent To ' + userdata.emailAddress);
+      } else {
+        dispatch({type: actionTypes.NOT_LOADING});
+        toast.show(
+          'Some Problem Occured While Sending Temporary Password To Your Email Address, Try Again',
+          2000,
+        );
+      }
+    })
+    .catch(error => {
+      dispatch({type: actionTypes.NOT_LOADING});
+      if (error.response.status === 404) {
+        toast.show(
+          userdata.emailAddress + ' Has Not Been Registered In DatingApp',
+          2500,
+        );
+      } else if (error.response.status === 409) {
+        toast.show(
+          'Email Has Been Sent On ' +
+            userdata.emailAddress +
+            ' But Some Problem Occured In Reseting Your Temporary Password, Try Again',
+          2500,
+        );
+      } else if (error.response.status === 500) {
+        toast.show(
+          'Some Problem Occured While Sending Temporary Password To Your Email Address, Try Again',
+          2000,
+        );
+      } else {
+        toast.show(
+          'Some Problem Occured While Sending Temporary Password To Your Email Address, Try Again',
+          2000,
+        );
+      }
+    });
+};
+
 export const resetPassword = (
   navigation,
   userdata,
   toast,
-  forget,
 ) => async dispatch => {
   dispatch({type: actionTypes.START_LOADING});
-  firebase
-    .auth()
-    .sendPasswordResetEmail(userdata.emailAddress)
-    .then(() => {
-      dispatch({type: actionTypes.NOT_LOADING});
-      navigation.goBack();
-      alert('Reset Password Email Has Been Sent To ' + userdata.emailAddress);
+  axios
+    .post(server + 'users/resetPassword', userdata, {
+      headers: {
+        'x-access-token': userdata.token,
+      },
     })
-    .catch(error => {
+    .then(response => {
+      if (response.status === 200) {
+        navigation.goBack();
+        dispatch({type: actionTypes.NOT_LOADING});
+        alert('Your Password Has Been Reset Successfully');
+      } else {
+        dispatch({type: actionTypes.NOT_LOADING});
+        toast.show(
+          'Some Problem Occured While Reseting Your Password, Try Again',
+          2000,
+        );
+      }
+    })
+    .catch(() => {
       dispatch({type: actionTypes.NOT_LOADING});
-      toast.show(error.message, 2500);
+      toast.show(
+        'Some Problem Occured While Reseting Your Password, Try Again',
+        2000,
+      );
     });
 };
 

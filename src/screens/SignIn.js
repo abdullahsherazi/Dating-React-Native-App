@@ -151,7 +151,7 @@ class SignIn extends React.Component {
             </Text>
           </View>
 
-          {/* <View
+          <View
             style={{
               width: '90%',
               alignItems: 'center',
@@ -180,7 +180,6 @@ class SignIn extends React.Component {
               Reset Your Password
             </Text>
           </View>
-         */}
         </ScrollView>
 
         <Toast

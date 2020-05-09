@@ -9,9 +9,38 @@ import Profile from './Profile';
 import EditProfile from './EditProfile';
 import PartnersListCarousel from './PartnersListCarousel';
 import PartnerDetail from './PartnerDetail';
+import Caller from './Caller';
+import Reciever from './Reciever';
+import ForgetPassword from './ForgetPassword';
+import ResetPassword from './ResetPassword';
 
 const AppNavigator = createStackNavigator(
   {
+    ResetPassword: {
+      screen: ResetPassword,
+      navigationOptions: () => ({
+        header: null,
+      }),
+    },
+    ForgetPassword: {
+      screen: ForgetPassword,
+      navigationOptions: () => ({
+        header: null,
+      }),
+    },
+    Reciever: {
+      screen: Reciever,
+      navigationOptions: () => ({
+        header: null,
+      }),
+    },
+
+    Caller: {
+      screen: Caller,
+      navigationOptions: () => ({
+        header: null,
+      }),
+    },
     PartnerDetail: {
       screen: PartnerDetail,
       navigationOptions: () => ({

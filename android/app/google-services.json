@@ -1,0 +1,40 @@
+{
+  "project_info": {
+    "project_number": "639963043143",
+    "firebase_url": "https://adamstorage.firebaseio.com",
+    "project_id": "adamstorage",
+    "storage_bucket": "adamstorage.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:639963043143:android:ab2f49f5c87ac41251e862",
+        "android_client_info": {
+          "package_name": "com.datingapp"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "639963043143-ncudjaml2eu8larjgsflgnkiap7avrf6.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBby7SW1ENkgH6q4mN4BKuvhzgAfz9Z0wM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "639963043143-ncudjaml2eu8larjgsflgnkiap7avrf6.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

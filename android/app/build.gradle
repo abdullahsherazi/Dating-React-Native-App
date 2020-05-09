@@ -2,6 +2,9 @@ apply plugin: "com.android.application"
 
 import com.android.build.OutputFile
 
+apply plugin: 'com.google.gms.google-services'
+
+
 /**
  * The react.gradle file registers a task for each build variant (e.g. bundleDebugJsAndAssets
  * and bundleReleaseJsAndAssets).
@@ -136,20 +139,6 @@ android {
         versionName "1.0"
         vectorDrawables.useSupportLibrary = true
         multiDexEnabled true
-
-        //        ndk {
-        //     abiFilters 'armeabi-v7a', 'x86'
-        // }
-
-        // packagingOptions {
-        //     // The project react-native does not provide 64-bit binaries at the
-        //     // time of this writing. Unfortunately, packaging any 64-bit
-        //     // binaries into the .apk will crash the app at runtime on 64-bit
-        //     // platforms.
-        //     exclude '/lib/mips64/**'
-        //     exclude '/lib/arm64-v8a/**'
-        //     exclude '/lib/x86_64/**'
-        // }
     }
     splits {
         abi {
@@ -204,6 +193,8 @@ android {
 }
 
 dependencies {
+     implementation 'com.google.firebase:firebase-analytics:17.3.0'
+
     implementation fileTree(dir: "libs", include: ["*.jar"])
     //noinspection GradleDynamicVersion
     implementation "com.facebook.react:react-native:+"  // From node_modules

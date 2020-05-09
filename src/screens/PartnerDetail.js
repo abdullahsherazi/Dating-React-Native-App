@@ -5,6 +5,7 @@ import {
   TouchableOpacity,
   Text,
   View,
+  Linking,
   Image,
   ActivityIndicator,
   SafeAreaView,
@@ -16,10 +17,14 @@ import {connect} from 'react-redux';
 import Toast from 'react-native-easy-toast';
 import GlobalHeader from '../components/GlobalHeader';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import * as Animatable from 'react-native-animatable';
+import Entypo from 'react-native-vector-icons/Entypo';
 
 class PartnerDetail extends React.Component {
   state = {
     navigationData: this.props.navigation.state.params.data,
+    otherContactMethods: false,
+    contactMethodsWithinApp: false,
   };
   render() {
     return (
@@ -93,7 +98,193 @@ class PartnerDetail extends React.Component {
               {this.state.navigationData.introduction}
             </Text>
           </View>
+          <View
+            style={{
+              flexDirection: 'row',
+              justifyContent: 'space-between',
+              padding: 10,
+            }}>
+            <TouchableOpacity
+              style={{backgroundColor: 'black', padding: 8, borderRadius: 5}}
+              onPress={() => this.setState({contactMethodsWithinApp: true})}>
+              <Text
+                style={{
+                  fontSize: 10,
+                  fontWeight: 'bold',
+                  color: 'white',
+                }}>
+                Contact Methods Within App
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={{backgroundColor: 'black', padding: 8, borderRadius: 5}}
+              onPress={() => this.setState({otherContactMethods: true})}>
+              <Text
+                style={{
+                  fontSize: 10,
+                  fontWeight: 'bold',
+                  color: 'white',
+                }}>
+                Other Contact Methods
+              </Text>
+            </TouchableOpacity>
+          </View>
         </ScrollView>
+
+        {this.state.otherContactMethods ? (
+          <Animatable.View
+            ref="searchResultView"
+            duration={500}
+            animation="fadeIn"
+            style={{
+              height: '100%',
+              width: '100%',
+              position: 'absolute',
+              justifyContent: 'center',
+              alignItems: 'center',
+              backgroundColor: 'rgba(0,0,0,0.7)',
+            }}>
+            <View
+              style={{
+                width: '50%',
+                height: 100,
+                alignSelf: 'center',
+                borderRadius: 15,
+                padding: 17,
+                paddingTop: 15,
+                justifyContent: 'space-around',
+                backgroundColor: 'white',
+                alignItems: 'center',
+                flexDirection: 'row',
+              }}>
+              <TouchableOpacity
+                style={{height: 20, width: 20, overflow: 'hidden'}}
+                onPress={() =>
+                  Linking.openURL(
+                    'whatsapp://send?text=' +
+                      'Hello Iam ' +
+                      this.props.reduxState.userdata.name +
+                      ' I found you on Dating App.' +
+                      '&phone=' +
+                      this.state.navigationData.mobileNumber,
+                  )
+                }>
+                <Image
+                  source={require('../../assets/images/whatsapp.png')}
+                  style={{width: '100%', height: '100%'}}
+                />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={{height: 20, width: 20, overflow: 'hidden'}}
+                onPress={() =>
+                  Linking.openURL(
+                    `sms:${
+                      this.state.navigationData.mobileNumber
+                    }?body=Hello Iam ${
+                      this.props.reduxState.userdata.name
+                    } I found you on Dating App.`,
+                  )
+                }>
+                <Image
+                  source={require('../../assets/images/message.png')}
+                  style={{width: '100%', height: '100%'}}
+                />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={{height: 20, width: 20, overflow: 'hidden'}}
+                onPress={() =>
+                  Linking.openURL(
+                    `tel:${this.state.navigationData.mobileNumber}`,
+                  )
+                }>
+                <Image
+                  source={require('../../assets/images/phone.png')}
+                  style={{width: '100%', height: '100%'}}
+                />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={{position: 'absolute', top: 5, right: 5}}
+                onPress={() =>
+                  this.setState({
+                    otherContactMethods: false,
+                  })
+                }>
+                <Entypo name="circle-with-cross" color="#08a4ff" size={20} />
+              </TouchableOpacity>
+            </View>
+          </Animatable.View>
+        ) : null}
+
+        {this.state.contactMethodsWithinApp ? (
+          <Animatable.View
+            ref="searchResultView"
+            duration={500}
+            animation="fadeIn"
+            style={{
+              height: '100%',
+              width: '100%',
+              position: 'absolute',
+              justifyContent: 'center',
+              alignItems: 'center',
+              backgroundColor: 'rgba(0,0,0,0.7)',
+            }}>
+            <View
+              style={{
+                width: '50%',
+                height: 100,
+                alignSelf: 'center',
+                borderRadius: 15,
+                padding: 17,
+                paddingTop: 15,
+                justifyContent: 'space-around',
+                backgroundColor: 'white',
+                alignItems: 'center',
+                flexDirection: 'row',
+              }}>
+              <TouchableOpacity
+                style={{justifyContent: 'center', alignItems: 'center'}}
+                onPress={() => {
+                  this.setState(
+                    {
+                      contactMethodsWithinApp: false,
+                    },
+                    () => {
+                      if (this.state.navigationData.fcmToken === null) {
+                        this.refs.toast.show(
+                          "Can't Call, Dating App Is Not Currently In Use Of " +
+                            this.state.navigationData.name,
+                          1500,
+                        );
+                      } else {
+                        this.props.navigation.navigate('Caller', {
+                          data: this.state.navigationData,
+                        });
+                      }
+                    },
+                  );
+                }}>
+                <View style={{height: 20, width: 20, overflow: 'hidden'}}>
+                  <Image
+                    source={require('../../assets/images/videoCall.png')}
+                    style={{width: '100%', height: '100%'}}
+                  />
+                </View>
+                <Text style={{fontWeight: 'bold', fontSize: 8}}>
+                  Video Call
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={{position: 'absolute', top: 5, right: 5}}
+                onPress={() =>
+                  this.setState({
+                    contactMethodsWithinApp: false,
+                  })
+                }>
+                <Entypo name="circle-with-cross" color="#08a4ff" size={20} />
+              </TouchableOpacity>
+            </View>
+          </Animatable.View>
+        ) : null}
         {this.props.reduxState.loading ? <Loader /> : null}
         <Toast
           ref="toast"

@@ -97,7 +97,7 @@ class EditProfile extends React.Component {
                 }}
                 onPress={() => {
                   ImagePicker.openPicker({
-                    // cropping: true,
+                    cropping: true,
                     compressImageQuality: 0.5,
                   })
                     .then(image => {
@@ -436,6 +436,13 @@ class EditProfile extends React.Component {
                   1500,
                 );
             }}
+          />
+          <GlobalButton
+            text={'Reset Password'}
+            EditImage={true}
+            navigation={this.props.navigation}
+            marginBottom={10}
+            submit={() => this.props.navigation.navigate('ResetPassword')}
           />
         </ScrollView>
         <Toast
