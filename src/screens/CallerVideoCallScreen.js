@@ -10,22 +10,13 @@ import {
   TextInput,
   Dimensions,
 } from 'react-native';
-import GlobalHeader from '../components/GlobalHeader';
-import GlobalButton from '../components/GlobalButton';
-import Loader from '../components/Loader';
 import {bindActionCreators} from 'redux';
 import * as reduxActions from '../redux/actions/actions';
 import {connect} from 'react-redux';
-import Toast from 'react-native-easy-toast';
-import ImagePicker from 'react-native-image-crop-picker';
-import RadioForm from 'react-native-simple-radio-button';
-import {Textarea} from 'native-base';
 import axios from 'axios';
 import server from '../constants/server';
 import io from 'socket.io-client';
 import {Header, Body, Left, Right} from 'native-base';
-import * as Animatable from 'react-native-animatable';
-
 import {
   RTCPeerConnection,
   RTCIceCandidate,
@@ -36,9 +27,19 @@ import {
   mediaDevices,
   registerGlobals,
 } from 'react-native-webrtc';
-const dimensions = Dimensions.get('window');
+import Sound from 'react-native-sound';
 
-class Caller extends React.Component {
+const dimensions = Dimensions.get('window');
+import GlobalHeader from '../components/GlobalHeader';
+import GlobalButton from '../components/GlobalButton';
+import Loader from '../components/Loader';
+import Toast from 'react-native-easy-toast';
+import ImagePicker from 'react-native-image-crop-picker';
+import RadioForm from 'react-native-simple-radio-button';
+import {Textarea} from 'native-base';
+import * as Animatable from 'react-native-animatable';
+
+class CallerVideoCallScreen extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
@@ -48,15 +49,26 @@ class Caller extends React.Component {
       callerSocketId: null,
       loading: true,
       loadingDescription: 'Connecting To Server',
+      properEndCall: false,
+      componentWillUnmountShouldRun: true,
     };
 
     this.sdp;
     this.socket = null;
     this.candidates = [];
+    this.whoosh = null;
+    this.connectingtimeOut = null;
   }
   componentWillUnmount() {
-    this.socket.disconnect();
-    this.pc.close();
+    if (
+      this.state.properEndCall === false &&
+      this.state.componentWillUnmountShouldRun === true
+    ) {
+      if (this.connectingtimeOut !== null) {
+        clearTimeout(this.connectingtimeOut);
+      }
+      this.closeCall();
+    }
   }
   componentDidMount = () => {
     this.setState({
@@ -66,10 +78,14 @@ class Caller extends React.Component {
       callerSocketId: null,
       loading: true,
       loadingDescription: 'Connecting To Server',
+      connecting: true,
     });
     this.sdp;
     this.socket = null;
     this.candidates = [];
+    this.connectingtimeOut = null;
+    this.props.reduxActions.setCallStatus(true);
+    this.whoosh = null;
 
     this.socket = io.connect(server, {
       path: '/io/webrtc',
@@ -77,11 +93,14 @@ class Caller extends React.Component {
     });
 
     this.socket.on('connection-success', socket => {
-      console.log(socket);
       let data = {
         ...this.props.navigation.state.params.data,
         socketId: socket.socketId,
-        callerName: this.props.reduxState.userdata.name,
+        caller: {
+          name: this.props.reduxState.userdata.name,
+          avatar: this.props.reduxState.userdata.avatar,
+        },
+        videoCall: 'YES',
       };
       axios
         .post(server + 'users/callNotification', data, {
@@ -91,13 +110,39 @@ class Caller extends React.Component {
         })
         .then(response => {
           if (response.status === 200) {
+            this.setState({
+              loadingDescription: 'Calling',
+            });
+
+            this.whoosh = new Sound('calling.mp3', Sound.MAIN_BUNDLE, error => {
+              if (error) {
+                return;
+              }
+              this.whoosh.play();
+              this.whoosh.setNumberOfLoops(-1);
+            });
+
+            this.connectingtimeOut = setTimeout(() => {
+              this.setState({
+                loadingDescription: 'No Response From Reciever',
+              });
+              let timeOutNavigate = setTimeout(() => {
+                this.closeCall();
+                clearTimeout(timeOutNavigate);
+              }, 500);
+              clearTimeout(this.connectingtimeOut);
+            }, 60000);
           } else {
             this.setState({
               loadingDescription:
                 'Some Problem Occured In Connecting To ' +
                 this.props.navigation.state.params.data.name,
+              componentWillUnmountShouldRun: false,
             });
             let timeOutNavigate = setTimeout(() => {
+              this.props.reduxActions.setCallStatus(false);
+              this.socket.disconnect();
+              this.pc.close();
               this.props.navigation.goBack();
               clearTimeout(timeOutNavigate);
             }, 500);
@@ -108,8 +153,12 @@ class Caller extends React.Component {
             loadingDescription:
               'Some Problem Occured In Connecting To ' +
               this.props.navigation.state.params.data.name,
+            componentWillUnmountShouldRun: false,
           });
           let timeOutNavigate = setTimeout(() => {
+            this.props.reduxActions.setCallStatus(false);
+            this.socket.disconnect();
+            this.pc.close();
             this.props.navigation.goBack();
             clearTimeout(timeOutNavigate);
           }, 500);
@@ -117,9 +166,11 @@ class Caller extends React.Component {
     });
 
     this.socket.on('recieverCallResponse', payload => {
+      clearTimeout(this.connectingtimeOut);
       this.setState({
         recieverSocketId: payload.recieverSocketId,
         callerSocketId: payload.callerSocketId,
+        connecting: false,
       });
       this.createOffer(payload);
     });
@@ -131,6 +182,7 @@ class Caller extends React.Component {
         loading: false,
         loadingDescription: '',
       });
+      this.whoosh.stop();
     });
 
     this.socket.on('endCall', () => {
@@ -140,16 +192,49 @@ class Caller extends React.Component {
           loadingDescription:
             'Call Has Been Ended By ' +
             this.props.navigation.state.params.data.name,
+          properEndCall: true,
         },
         () => {
-          this.pc.close();
-          this.socket.disconnect();
           let timeOutNavigate = setTimeout(() => {
-            this.props.navigation.goBack();
+            this.closeCall();
             clearTimeout(timeOutNavigate);
           }, 500);
         },
       );
+    });
+    this.socket.on('cancelCall', () => {
+      this.setState(
+        {
+          loading: true,
+          loadingDescription:
+            'Call Has Been Cancelled By ' +
+            this.props.navigation.state.params.data.name,
+          properEndCall: true,
+        },
+        () => {
+          let timeOutNavigate = setTimeout(() => {
+            this.closeCall();
+            clearTimeout(timeOutNavigate);
+          }, 500);
+        },
+      );
+    });
+    this.socket.on('socketDisconnected', () => {
+      if (this.state.properEndCall === false) {
+        this.setState(
+          {
+            loading: true,
+            loadingDescription: 'Some Problem Occured At Reciever End',
+            componentWillUnmountShouldRun: false,
+          },
+          () => {
+            let timeOutNavigate = setTimeout(() => {
+              this.closeCall();
+              clearTimeout(timeOutNavigate);
+            }, 500);
+          },
+        );
+      }
     });
     this.socket.on('candidate', candidate => {
       // console.log('From Peer... ', JSON.stringify(candidate))
@@ -183,7 +268,7 @@ class Caller extends React.Component {
 
     // triggered when there is a change in connection state
     this.pc.oniceconnectionstatechange = e => {
-      console.log(e);
+      // console.log(e);
     };
 
     this.pc.onaddstream = e => {
@@ -206,9 +291,10 @@ class Caller extends React.Component {
       this.setState({
         loadingDescription:
           'Some Problem Occured In Getting Hold On Your Media Devices',
+        componentWillUnmountShouldRun: false,
       });
       let timeOutNavigate = setTimeout(() => {
-        this.props.navigation.goBack();
+        this.closeCall();
         clearTimeout(timeOutNavigate);
       }, 500);
     };
@@ -245,6 +331,16 @@ class Caller extends React.Component {
         .catch(failure);
     });
   };
+  closeCall = () => {
+    if (this.whoosh !== null) {
+      this.whoosh.stop();
+    }
+    this.props.reduxActions.setCallStatus(false);
+    this.socket.disconnect();
+    this.pc.close();
+    this.props.navigation.goBack();
+  };
+
   sendToPeer = (messageType, payload) => {
     this.socket.emit(messageType, payload);
   };
@@ -264,9 +360,10 @@ class Caller extends React.Component {
           loadingDescription:
             'Some Problem Occured While Calling To ' +
             this.props.navigation.state.params.data.name,
+          componentWillUnmountShouldRun: false,
         });
         let timeOutNavigate = setTimeout(() => {
-          this.props.navigation.goBack();
+          this.closeCall();
           clearTimeout(timeOutNavigate);
         }, 500);
       });
@@ -322,34 +419,83 @@ class Caller extends React.Component {
                 {this.state.loadingDescription}
               </Text>
             </View>
+            <View
+              style={{
+                position: 'absolute',
+                bottom: 10,
+                flexDirection: 'row',
+                justifyContent: 'center',
+                alignItems: 'center',
+                width: '100%',
+              }}>
+              <TouchableOpacity
+                style={{height: 50, width: 50}}
+                onPress={() => {
+                  this.socket.emit('endCall', {
+                    recieverSocketId: this.state.recieverSocketId,
+                    callerSocketId: this.state.callerSocketId,
+                    caller: true,
+                  });
+                  if (this.whoosh !== null) {
+                    this.whoosh.stop();
+                  }
+                  this.props.reduxActions.setCallStatus(false);
+                  this.socket.disconnect();
+                  this.pc.close();
+                  this.props.navigation.goBack();
+                }}>
+                <Image
+                  source={require('../../assets/images/endCall.png')}
+                  style={{width: '100%', height: '100%'}}
+                  resizeMode="contain"
+                />
+              </TouchableOpacity>
+            </View>
           </View>
         ) : (
           <View style={{flex: 1}}>
+            <View
+              style={{
+                width: '100%',
+                height: 200,
+                marginVertical: 10,
+              }}>
+              <View
+                style={{
+                  height: 200,
+                  width: 200,
+                  borderRadius: 200,
+                  position: 'absolute',
+                  right: 20,
+                  overflow: 'hidden',
+                  borderWidth: 1,
+                  borderColor: 'black',
+                }}>
+                <RTCView
+                  key={1}
+                  zOrder={0}
+                  objectFit="cover"
+                  style={{
+                    height: '100%',
+                    width: '100%',
+                  }}
+                  streamURL={localStream && localStream.toURL()}
+                  // streamURL={this.state.localStream.toURL()}
+                />
+              </View>
+            </View>
             <RTCView
               key={1}
               zOrder={0}
               objectFit="cover"
-              style={{width: '100%', height: '65%'}}
+              style={{
+                width: '90%',
+                height: '100%',
+                alignSelf: 'center',
+              }}
               streamURL={remoteStream && remoteStream.toURL()}
               // streamURL={this.state.remoteStream.toURL()}
             />
-            <View
-              style={{
-                height: '35%',
-                width: 100,
-                position: 'absolute',
-                right: 0,
-                bottom: 0,
-              }}>
-              <RTCView
-                key={1}
-                zOrder={0}
-                objectFit="cover"
-                style={{height: '100%', width: '100%'}}
-                streamURL={localStream && localStream.toURL()}
-                // streamURL={this.state.localStream.toURL()}
-              />
-            </View>
             <View
               style={{
                 position: 'absolute',
@@ -367,7 +513,7 @@ class Caller extends React.Component {
                   style={{
                     width: '100%',
                     height: '100%',
-                    tintColor: 'black',
+                    tintColor: 'white',
                   }}
                   resizeMode="contain"
                 />
@@ -375,14 +521,12 @@ class Caller extends React.Component {
               <TouchableOpacity
                 style={{height: 50, width: 50}}
                 onPress={() => {
-                  this.pc.close();
                   this.socket.emit('endCall', {
                     recieverSocketId: this.state.recieverSocketId,
                     callerSocketId: this.state.callerSocketId,
                     caller: true,
                   });
-                  this.socket.disconnect();
-                  this.props.navigation.goBack();
+                  this.closeCall();
                 }}>
                 <Image
                   source={require('../../assets/images/endCall.png')}
@@ -393,27 +537,6 @@ class Caller extends React.Component {
             </View>
           </View>
         )}
-        <Toast
-          ref="toast"
-          style={{
-            backgroundColor: 'black',
-            justifyContent: 'center',
-            width: '90%',
-            alignSelf: 'center',
-          }}
-          position="center"
-          positionValue={200}
-          fadeInDuration={750}
-          fadeOutDuration={1000}
-          opacity={0.8}
-          textStyle={{
-            color: 'white',
-            textAlign: 'center',
-            fontSize: 10,
-            fontWeight: 'bold',
-          }}
-        />
-        {this.props.reduxState.loading ? <Loader /> : null}
       </SafeAreaView>
     );
   }
@@ -430,4 +553,4 @@ const mapDispatchToProps = dispatch => ({
 export default connect(
   mapStateToProps,
   mapDispatchToProps,
-)(Caller);
+)(CallerVideoCallScreen);

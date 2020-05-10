@@ -117,6 +117,40 @@ class DrawerView extends React.Component {
             </Text>
           </View>
         </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.ContentView}
+          onPress={() => {
+            this.props.hideDrawer();
+            this.props.reduxActions.signout(
+              this.props.navigation,
+              this.props.reduxState.userdata,
+              this.refs.toast,
+            );
+          }}>
+          <View style={styles.ContentViewInside1}>
+            <Image
+              source={require('../../assets/images/logout.png')}
+              style={{
+                width: '60%',
+                height: '50%',
+                marginLeft: 5,
+                tintColor: 'black',
+              }}
+              resizeMode="contain"
+            />
+          </View>
+
+          <View style={styles.ContentViewInside2}>
+            <Text
+              style={[
+                styles.ContentViewText,
+                {color: 'black', fontWeight: 'bold'},
+              ]}>
+              {' '}
+              Logout
+            </Text>
+          </View>
+        </TouchableOpacity>
       </View>
     );
   }

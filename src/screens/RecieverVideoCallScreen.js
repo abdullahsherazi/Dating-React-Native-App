@@ -10,17 +10,9 @@ import {
   TextInput,
   Dimensions,
 } from 'react-native';
-import GlobalHeader from '../components/GlobalHeader';
-import GlobalButton from '../components/GlobalButton';
-import Loader from '../components/Loader';
 import {bindActionCreators} from 'redux';
 import * as reduxActions from '../redux/actions/actions';
 import {connect} from 'react-redux';
-import Toast from 'react-native-easy-toast';
-import ImagePicker from 'react-native-image-crop-picker';
-import RadioForm from 'react-native-simple-radio-button';
-import {Textarea} from 'native-base';
-import axios from 'axios';
 import server from '../constants/server';
 import io from 'socket.io-client';
 import {
@@ -33,9 +25,21 @@ import {
   mediaDevices,
   registerGlobals,
 } from 'react-native-webrtc';
-const dimensions = Dimensions.get('window');
+import {Header, Body, Left, Right} from 'native-base';
+import {NavigationActions, StackActions} from 'react-navigation';
+import Sound from 'react-native-sound';
 
-class Reciever extends React.Component {
+const dimensions = Dimensions.get('window');
+import Toast from 'react-native-easy-toast';
+import ImagePicker from 'react-native-image-crop-picker';
+import RadioForm from 'react-native-simple-radio-button';
+import {Textarea} from 'native-base';
+import axios from 'axios';
+import GlobalHeader from '../components/GlobalHeader';
+import GlobalButton from '../components/GlobalButton';
+import Loader from '../components/Loader';
+
+class RecieverVideoCallScreen extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
@@ -45,16 +49,27 @@ class Reciever extends React.Component {
       callerSocketId: null,
       loading: true,
       loadingDescription: 'Connecting To Server',
+      calling: false,
+      properEndCall: false,
+      componentWillUnmountShouldRun: true,
     };
 
     this.sdp;
     this.socket = null;
     this.candidates = [];
+    this.connectingtimeOut = null;
+    this.whoosh = null;
   }
-
   componentWillUnmount() {
-    this.socket.disconnect();
-    this.pc.close();
+    if (
+      this.state.properEndCall === false &&
+      this.state.componentWillUnmountShouldRun === true
+    ) {
+      if (this.connectingtimeOut !== null) {
+        clearTimeout(this.connectingtimeOut);
+      }
+      this.closeCall();
+    }
   }
   componentDidMount = () => {
     this.setState({
@@ -64,10 +79,14 @@ class Reciever extends React.Component {
       callerSocketId: null,
       loading: true,
       loadingDescription: 'Connecting To Server',
+      calling: false,
     });
     this.sdp;
     this.socket = null;
     this.candidates = [];
+    this.connectingtimeOut = null;
+    this.props.reduxActions.setCallStatus(true);
+    this.whoosh = null;
 
     this.socket = io.connect(server, {
       path: '/io/webrtc',
@@ -84,18 +103,71 @@ class Reciever extends React.Component {
         recieverSocketId: socket.socketId,
         callerSocketId: this.props.navigation.state.params.data.callerSocketId,
       });
+
+      this.connectingtimeOut = setTimeout(() => {
+        this.setState({
+          loadingDescription: 'No Response From Caller',
+        });
+        let timeOutNavigate = setTimeout(() => {
+          this.closeCall();
+          clearTimeout(timeOutNavigate);
+        }, 500);
+        clearTimeout(this.connectingtimeOut);
+      }, 20000);
     });
 
     this.socket.on('offerOrAnswer', payload => {
+      clearTimeout(this.connectingtimeOut);
       this.setState({
-        loading: true,
         loadingDescription:
           this.props.navigation.state.params.data.caller.name + ' is calling',
+        calling: true,
       });
       this.sdp = JSON.stringify(payload.sdp);
       this.pc.setRemoteDescription(new RTCSessionDescription(payload.sdp));
+      this.whoosh = new Sound('ringing.mp3', Sound.MAIN_BUNDLE, error => {
+        if (error) {
+          return;
+        }
+        this.whoosh.play();
+        this.whoosh.setNumberOfLoops(-1);
+      });
     });
 
+    this.socket.on('endCall', () => {
+      this.setState(
+        {
+          loading: true,
+          loadingDescription:
+            'Call Has Been Ended By ' +
+            this.props.navigation.state.params.data.caller.name,
+          properEndCall: true,
+        },
+        () => {
+          let timeOutNavigate = setTimeout(() => {
+            this.closeCall();
+            clearTimeout(timeOutNavigate);
+          }, 500);
+        },
+      );
+    });
+    this.socket.on('socketDisconnected', () => {
+      if (this.state.properEndCall === false) {
+        this.setState(
+          {
+            loading: true,
+            loadingDescription: 'Some Problem Occured At Caller End',
+            componentWillUnmountShouldRun: false,
+          },
+          () => {
+            let timeOutNavigate = setTimeout(() => {
+              this.closeCall();
+              clearTimeout(timeOutNavigate);
+            }, 500);
+          },
+        );
+      }
+    });
     this.socket.on('candidate', candidate => {
       // console.log('From Peer... ', JSON.stringify(candidate))
       // this.candidates = [...this.candidates, candidate]
@@ -129,7 +201,7 @@ class Reciever extends React.Component {
 
     // triggered when there is a change in connection state
     this.pc.oniceconnectionstatechange = e => {
-      console.log(e);
+      // console.log(e);
     };
 
     this.pc.onaddstream = e => {
@@ -141,7 +213,7 @@ class Reciever extends React.Component {
     };
 
     const success = stream => {
-      console.log(stream.toURL());
+      // console.log(stream.toURL());
       this.setState({
         localStream: stream,
       });
@@ -152,9 +224,10 @@ class Reciever extends React.Component {
       this.setState({
         loadingDescription:
           'Some Problem Occured In Getting Hold On Your Media Devices',
+        componentWillUnmountShouldRun: false,
       });
       let timeOutNavigate = setTimeout(() => {
-        this.props.navigation.goBack();
+        this.closeCall();
         clearTimeout(timeOutNavigate);
       }, 500);
     };
@@ -196,7 +269,24 @@ class Reciever extends React.Component {
   sendToPeer = (messageType, payload) => {
     this.socket.emit(messageType, payload);
   };
-
+  closeCall = () => {
+    if (this.whoosh !== null) {
+      this.whoosh.stop();
+    }
+    this.props.reduxActions.setCallStatus(false);
+    this.socket.disconnect();
+    this.pc.close();
+    this.props.navigation.dispatch(
+      StackActions.reset({
+        index: 0,
+        actions: [
+          NavigationActions.navigate({
+            routeName: 'Home',
+          }),
+        ],
+      }),
+    );
+  };
   createAnswer = () => {
     this.pc
       .createAnswer({offerToReceiveVideo: 1})
@@ -208,9 +298,22 @@ class Reciever extends React.Component {
           sdp,
           caller: false,
         });
+        this.whoosh.stop();
+        this.setState({
+          loading: false,
+          loadingDescription: '',
+          calling: false,
+        });
       })
-      .catch(err => {
-        console.warn(err);
+      .catch(() => {
+        this.setState({
+          loadingDescription: 'Some Problem Occured While Answering To Call',
+          componentWillUnmountShouldRun: false,
+        });
+        let timeOutNavigate = setTimeout(() => {
+          this.closeCall();
+          clearTimeout(timeOutNavigate);
+        }, 500);
       });
   };
 
@@ -266,74 +369,91 @@ class Reciever extends React.Component {
                 {this.state.loadingDescription}
               </Text>
             </View>
-            <View
-              style={{
-                position: 'absolute',
-                bottom: 10,
-                flexDirection: 'row',
-                justifyContent: 'center',
-                alignItems: 'center',
-                width: '100%',
-              }}>
-              <TouchableOpacity
-                style={{height: 50, width: 50, marginRight: 20}}
-                onPress={() => localStream._tracks[1]._switchCamera()}>
-                <Image
-                  source={require('../../assets/images/answerCall.jpg')}
-                  style={{
-                    width: '100%',
-                    height: '100%',
-                  }}
-                  resizeMode="contain"
-                />
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={{height: 50, width: 50}}
-                onPress={() => {
-                  this.pc.close();
-                  this.socket.emit('endCall', {
-                    recieverSocketId: this.state.recieverSocketId,
-                    callerSocketId: this.state.callerSocketId,
-                    caller: true,
-                  });
-                  this.socket.disconnect();
-                  this.props.navigation.goBack();
+
+            {this.state.calling === true ? (
+              <View
+                style={{
+                  position: 'absolute',
+                  bottom: 10,
+                  flexDirection: 'row',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  width: '100%',
                 }}>
-                <Image
-                  source={require('../../assets/images/endCall.png')}
-                  style={{width: '100%', height: '100%'}}
-                  resizeMode="contain"
-                />
-              </TouchableOpacity>
-            </View>
+                <TouchableOpacity
+                  style={{height: 40, width: 40, marginRight: 20}}
+                  onPress={() => this.createAnswer()}>
+                  <Image
+                    source={require('../../assets/images/answerCall.png')}
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                    }}
+                    resizeMode="contain"
+                  />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={{height: 50, width: 50}}
+                  onPress={() => {
+                    this.socket.emit('cancelCall', {
+                      recieverSocketId: this.state.recieverSocketId,
+                      callerSocketId: this.state.callerSocketId,
+                      caller: false,
+                    });
+                    this.setState({
+                      calling: false,
+                    });
+                    this.closeCall();
+                  }}>
+                  <Image
+                    source={require('../../assets/images/endCall.png')}
+                    style={{width: '100%', height: '100%'}}
+                    resizeMode="contain"
+                  />
+                </TouchableOpacity>
+              </View>
+            ) : null}
           </View>
         ) : (
           <View style={{flex: 1}}>
+            <View
+              style={{
+                width: '100%',
+                height: 200,
+                marginVertical: 10,
+              }}>
+              <View
+                style={{
+                  height: 200,
+                  width: 200,
+                  borderRadius: 200,
+                  position: 'absolute',
+                  right: 20,
+                  overflow: 'hidden',
+                  borderWidth: 1,
+                  borderColor: 'black',
+                }}>
+                <RTCView
+                  key={1}
+                  zOrder={0}
+                  objectFit="cover"
+                  style={{
+                    height: '100%',
+                    width: '100%',
+                  }}
+                  streamURL={localStream && localStream.toURL()}
+                  // streamURL={this.state.localStream.toURL()}
+                />
+              </View>
+            </View>
             <RTCView
               key={1}
               zOrder={0}
               objectFit="cover"
-              style={{width: '100%', height: '65%'}}
+              style={{width: '90%', height: '100%', alignSelf: 'center'}}
               streamURL={remoteStream && remoteStream.toURL()}
               // streamURL={this.state.remoteStream.toURL()}
             />
-            <View
-              style={{
-                height: '35%',
-                width: 100,
-                position: 'absolute',
-                right: 0,
-                bottom: 0,
-              }}>
-              <RTCView
-                key={1}
-                zOrder={0}
-                objectFit="cover"
-                style={{height: '100%', width: '100%'}}
-                streamURL={localStream && localStream.toURL()}
-                // streamURL={this.state.localStream.toURL()}
-              />
-            </View>
             <View
               style={{
                 position: 'absolute',
@@ -351,7 +471,7 @@ class Reciever extends React.Component {
                   style={{
                     width: '100%',
                     height: '100%',
-                    tintColor: 'black',
+                    tintColor: 'white',
                   }}
                   resizeMode="contain"
                 />
@@ -359,14 +479,13 @@ class Reciever extends React.Component {
               <TouchableOpacity
                 style={{height: 50, width: 50}}
                 onPress={() => {
-                  this.pc.close();
                   this.socket.emit('endCall', {
                     recieverSocketId: this.state.recieverSocketId,
                     callerSocketId: this.state.callerSocketId,
-                    caller: true,
+                    caller: false,
                   });
-                  this.socket.disconnect();
-                  this.props.navigation.goBack();
+                  this.whoosh.stop();
+                  this.closeCall();
                 }}>
                 <Image
                   source={require('../../assets/images/endCall.png')}
@@ -377,69 +496,11 @@ class Reciever extends React.Component {
             </View>
           </View>
         )}
-        <Toast
-          ref="toast"
-          style={{
-            backgroundColor: 'black',
-            justifyContent: 'center',
-            width: '90%',
-            alignSelf: 'center',
-          }}
-          position="center"
-          positionValue={200}
-          fadeInDuration={750}
-          fadeOutDuration={1000}
-          opacity={0.8}
-          textStyle={{
-            color: 'white',
-            textAlign: 'center',
-            fontSize: 10,
-            fontWeight: 'bold',
-          }}
-        />
-        {this.props.reduxState.loading ? <Loader /> : null}
       </SafeAreaView>
     );
   }
 }
 
-const styles = StyleSheet.create({
-  buttonsContainer: {
-    flexDirection: 'row',
-  },
-  button: {
-    margin: 5,
-    paddingVertical: 10,
-    backgroundColor: 'lightgrey',
-    borderRadius: 5,
-  },
-  textContent: {
-    fontFamily: 'Avenir',
-    fontSize: 20,
-    textAlign: 'center',
-  },
-  videosContainer: {
-    flex: 1,
-    flexDirection: 'row',
-    justifyContent: 'center',
-  },
-  rtcView: {
-    width: 100, //dimensions.width,
-    height: 200, //dimensions.height / 2,
-    backgroundColor: 'black',
-  },
-  scrollView: {
-    flex: 1,
-    // flexDirection: 'row',
-    backgroundColor: 'teal',
-    padding: 15,
-  },
-  rtcViewRemote: {
-    width: dimensions.width - 30,
-    height: 200, //dimensions.height / 2,
-    backgroundColor: 'black',
-  },
-});
 const mapStateToProps = state => ({
   reduxState: state.reducers,
 });
@@ -451,4 +512,4 @@ const mapDispatchToProps = dispatch => ({
 export default connect(
   mapStateToProps,
   mapDispatchToProps,
-)(Reciever);
+)(RecieverVideoCallScreen);

@@ -9,8 +9,8 @@ import Profile from './Profile';
 import EditProfile from './EditProfile';
 import PartnersListCarousel from './PartnersListCarousel';
 import PartnerDetail from './PartnerDetail';
-import Caller from './Caller';
-import Reciever from './Reciever';
+import CallerVideoCallScreen from './CallerVideoCallScreen';
+import RecieverVideoCallScreen from './RecieverVideoCallScreen';
 import ForgetPassword from './ForgetPassword';
 import ResetPassword from './ResetPassword';
 
@@ -28,15 +28,15 @@ const AppNavigator = createStackNavigator(
         header: null,
       }),
     },
-    Reciever: {
-      screen: Reciever,
+    RecieverVideoCallScreen: {
+      screen: RecieverVideoCallScreen,
       navigationOptions: () => ({
         header: null,
       }),
     },
 
-    Caller: {
-      screen: Caller,
+    CallerVideoCallScreen: {
+      screen: CallerVideoCallScreen,
       navigationOptions: () => ({
         header: null,
       }),

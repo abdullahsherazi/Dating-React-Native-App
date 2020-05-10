@@ -256,20 +256,23 @@ class PartnerDetail extends React.Component {
                           1500,
                         );
                       } else {
-                        this.props.navigation.navigate('Caller', {
-                          data: this.state.navigationData,
-                        });
+                        this.props.navigation.navigate(
+                          'CallerVideoCallScreen',
+                          {
+                            data: this.state.navigationData,
+                          },
+                        );
                       }
                     },
                   );
                 }}>
-                <View style={{height: 20, width: 20, overflow: 'hidden'}}>
+                <View style={{height: 30, width: 30, overflow: 'hidden'}}>
                   <Image
                     source={require('../../assets/images/videoCall.png')}
                     style={{width: '100%', height: '100%'}}
                   />
                 </View>
-                <Text style={{fontWeight: 'bold', fontSize: 8}}>
+                <Text style={{fontWeight: 'bold', fontSize: 12}}>
                   Video Call
                 </Text>
               </TouchableOpacity>

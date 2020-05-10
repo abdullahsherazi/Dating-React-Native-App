@@ -153,7 +153,7 @@ export const signin = (navigation, userdata, toast) => async dispatch => {
   }
 };
 
-export const checkUser = navigation => async dispatch => {
+export const checkUser = (navigation, call) => async dispatch => {
   AsyncStorage.getItem('userdata').then(data => {
     let getout = false;
     let userdata = JSON.parse(data);
@@ -166,16 +166,40 @@ export const checkUser = navigation => async dispatch => {
       PushNotification.configure({
         // (required) Called when a remote or local notification is opened or received
         onNotification: notification => {
-          console.log(notification);
-
-          if (notification.foreground)
-            navigation.navigate('Reciever', {
-              data: {callerSocketId: notification.data.callerSocketId},
-            });
-          else {
-            navigation.navigate('Reciever', {
-              data: {callerSocketId: notification.callerSocketId},
-            });
+          console.log('NOTIFICATION', notification);
+          if (!call) {
+            if (notification.foreground === true) {
+              if (notification.data.videoCall === 'YES') {
+                navigation.navigate('RecieverVideoCallScreen', {
+                  data: {
+                    callerSocketId: notification.data.callerSocketId,
+                    caller: {
+                      name: notification.data.callerName,
+                      avatar: notification.data.callerAvatar,
+                    },
+                  },
+                });
+              }
+            } else if (notification.foreground === false) {
+              let date = new Date();
+              let callingDate = new Date(notification.date);
+              let timeDifference = date - callingDate;
+              if (timeDifference >= 60000) {
+                alert('You Missed A Call From ' + notification.callerName);
+              } else {
+                if (notification.videoCall === 'YES') {
+                  navigation.navigate('RecieverVideoCallScreen', {
+                    data: {
+                      callerSocketId: notification.callerSocketId,
+                      caller: {
+                        name: notification.callerName,
+                        avatar: notification.callerAvatar,
+                      },
+                    },
+                  });
+                }
+              }
+            }
           }
           getout = true;
         },
@@ -596,5 +620,12 @@ export const internetListener = (navigation, checkUser) => async dispatch => {
         }),
       );
     }
+  });
+};
+
+export const setCallStatus = callStatus => async dispatch => {
+  dispatch({
+    type: actionTypes.SET_CALL_STATUS,
+    payload: callStatus,
   });
 };

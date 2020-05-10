@@ -3,3 +3,4 @@ export const NOT_LOADING = 'NOT_LOADING';
 export const START_LOADING = 'START_LOADING';
 export const CHECK_ASYNC = 'CHECK_ASYNC';
 export const SET_PARTNERS = 'SET_PARTNERS';
+export const SET_CALL_STATUS = 'SET_CALL_STATUS';

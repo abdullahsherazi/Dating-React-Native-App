@@ -22,7 +22,10 @@ class SplashScreen extends React.Component {
     }, 3000);
   }
   checkUser = () => {
-    this.props.reduxActions.checkUser(this.props.navigation);
+    this.props.reduxActions.checkUser(
+      this.props.navigation,
+      this.props.reduxState.call,
+    );
   };
   spring() {
     Animated.spring(this.springValue, {

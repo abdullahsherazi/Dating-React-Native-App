@@ -4,6 +4,7 @@ const initialState = {
   loading: false,
   userdata: {},
   partners: [],
+  call: false,
 };
 
 export default function(state = initialState, action) {
@@ -30,7 +31,12 @@ export default function(state = initialState, action) {
         ...state,
         partners: action.payload,
       };
-
+    case actionTypes.SET_CALL_STATUS:
+      console.log('CALL STATUS', action.payload);
+      return {
+        ...state,
+        call: action.payload,
+      };
     default:
       return state;
   }

@@ -15,6 +15,8 @@ import {connect} from 'react-redux';
 import GloabalHeader from '../components/GlobalHeader';
 import Loader from '../components/Loader';
 import Toast from '../components/react-native-easy-toast';
+import {bannerAdIds} from '../constants/adsUnitIds';
+import {AdMobBanner} from 'react-native-admob';
 
 class Home extends Component {
   state = {
@@ -170,25 +172,28 @@ class Home extends Component {
             <Text style={[styles.ServiceText, styles.green]}>
               Search Partners
             </Text>
-
             <MaterialCommunityIcons
               name={'account-search-outline'}
               style={styles.Icon}
             />
           </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() =>
-              this.props.reduxActions.signout(
-                this.props.navigation,
-                this.props.reduxState.userdata,
-                this.refs.toast,
-              )
-            }
-            style={[{position: 'absolute', bottom: 20}, styles.options]}>
-            <Text style={[styles.ServiceText, styles.green]}>Sign Out</Text>
-
-            <MaterialCommunityIcons name={'logout'} style={styles.Icon} />
-          </TouchableOpacity>
+          <View
+            style={{
+              position: 'absolute',
+              bottom: 20,
+              width: '100%',
+              height: 20,
+              justifyContent: 'center',
+              alignItems: 'center',
+              alignSelf: 'center',
+            }}>
+            <AdMobBanner
+              adSize="banner"
+              adUnitID={bannerAdIds[0]}
+              // testDevices={[AdMobBanner.simulatorId]}
+              // onAdFailedToLoad={error => console.error(error)}
+            />
+          </View>
         </View>
         <Toast
           ref="toast"
