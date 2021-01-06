@@ -16,7 +16,7 @@
     "@react-native-community/netinfo": "^5.7.0",
     "@react-native-firebase/app": "^6.7.1",
     "@react-native-firebase/storage": "^6.7.1",
-    "axios": "^0.19.2",
+    "axios": "^0.21.1",
     "native-base": "^2.13.12",
     "react": "16.11.0",
     "react-native": "0.62.1",
